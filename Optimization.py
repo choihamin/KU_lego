@@ -228,7 +228,7 @@ def weight_cal(data, r=1.1):
 
 
 
-@app.route('/SetChargeCompleteInfo')
+@app.route('/SetChargeCompleteInfo', methods=['GET', 'POST'])
 def SetChargeCompleteInfo():
 
     connect = conn()
@@ -322,7 +322,7 @@ def SetChargeCompleteInfo():
         if connect is not None:
             connect.close()
 
-@app.route('/GetScheduleInfo')
+@app.route('/GetScheduleInfo', methods=['GET', 'POST'])
 def GetScheduleInfo():
     connect = conn()
     cur = connect.cursor()
@@ -358,9 +358,95 @@ def GetScheduleInfo():
         if connect is not None:
             connect.close()
 
-@app.route('/SetSubInfo')
+@app.route('/SetSubInfo', methods=['GET', 'POST'])
 def SetSubInfo():
+    connect = conn()
+    cur = connect.cursor()
 
+    id = request.args.get('Id')
+    reserve_time = request.args.get('Reserve_time')
+    location = request.args.get('Location')
+    notice = request.args.get('Notice')
+
+    cur.execute("select reserve_id from Substitute")
+    reserve_id_lst = cur.fetchall()
+    reserve_id = max(list(map(lambda x: x[0], reserve_id_lst))) + 1
+
+    try:
+        cur.execute("select * from Substitute where customer_id='{}' and reserve_time='{}' and location='{}'".format(id,
+                                                                                                                     reserve_time,
+                                                                                                                     location))
+        if len(cur.fetchall()) != 0:
+            raise Exception
+        cur.execute("insert into Substitute values({},'{}', '{}', '{}', '{}','','')".format(reserve_id,
+                                                                                            id,
+                                                                                            reserve_time,
+                                                                                            location,
+                                                                                            notice))
+        connect.commit()
+
+        return jsonify({'result_code': 1})
+    except:
+        return jsonify({'result_code': 0})
+    finally:
+        if connect is not None:
+            connect.close()
+
+@app.route('/GetSubInfo')
+def GetSubInfo():
+    connect = conn()
+    cur = connect.cursor()
+    id = request.args.get('Id')
+
+    try:
+        sql = "select reserve_id, reserve_time, location, notice, driver_name, driver_phone, pick_up_time, Complete_time from Substitute natural join (CusDriver natural join Driver) where customer_id = '{}'"
+        cur.execute(sql.format(id))
+        data = cur.fetchall()
+        target = sorted(data, key=lambda x: x[2])[-1]
+
+        reserve_id = target[0]
+        reserve_time = target[1]
+        location = target[2]
+        notice = target[3]
+        driver_name = target[4]
+        driver_phone = target[5]
+        pick_up_time = target[6]
+        complete_time = target[7]
+
+        return jsonify({'reserve_id': reserve_id,
+                        'reserve_time': reserve_time,
+                        'location': location,
+                        'notice': notice,
+                        'driver_name': driver_name,
+                        'driver_phone': driver_phone,
+                        'pick_up_time': pick_up_time,
+                        'complete_time': complete_time,})
+    except:
+        return jsonify({'result_code': 0})
+    finally:
+        if connect is not None:
+            connect.close()
+
+@app.route('/GetDriverHomeInfo')
+def GetDriverHomeInfo():
+    connect = conn()
+    cur = connect.cursor()
+    driver_id = request.args.get('Id')
+
+    try:
+        sql = "select reserve_id, reserve_time, location, customer_name, customer_phone, car_number, car_model_name, notice from ((CarCus natural join CarModel) natural join (Substitute natural join Customer)) natural join CusDriver where driver_id = '{}'"
+        cur.execute(sql.format(driver_id))
+        data = cur.fetchall()
+        data = sorted(data, key = lambda x: x[1])
+
+        return jsonify(list=[dict(reserve_id=data[i][0], reserve_time=data[i][1], location=data[i][2],
+                                  customer_name=data[i][3], customer_phone=data[i][4], car_number=data[i][5],
+                                  car_model_name=data[i][6], notice=data[i][7]) for i in range(len(data))])
+    except:
+        return jsonify({'result_code': 0})
+    finally:
+        if connect is not None:
+            connect.close()
 
 
 @app.route('/DriverSetSignUpInfo', methods=['GET', 'POST'])
@@ -380,6 +466,47 @@ def DriverSetSignUpInfo():
     finally:
         if connect is not None:
             connect.close()
+
+@app.route('/SetPickUpInfo', methods=['GET', 'POST'])
+def SetPickUpInfo():
+    connect = conn()
+    cur = connect.cursor()
+
+    reservation_id = request.args.get('Reservation_id')
+    pick_up_time = request.args.get('Pick_up_time')
+
+    try:
+        cur.execute("update Substitute set pick_up_time = '{}' where reserve_id='{}'".format(pick_up_time, reservation_id))
+        connect.commit()
+        return jsonify({'result_code': 1})
+    except:
+        return jsonify({'result_code': 0})
+    finally:
+        if connect is not None:
+            connect.close()
+
+@app.route('/SetSubCompleteInfo', methos=['GET', 'POST'])
+def SetSubCompleteInfo():
+    connect = conn()
+    cur = connect.cursor()
+
+    reservation_id = request.args.get('Reservation_id')
+    complete_time = request.args.get('Pick_up_time')
+
+    try:
+        cur.execute(
+            "update Substitute set complete_time = '{}' where reserve_id='{}'".format(complete_time, reservation_id))
+        connect.commit()
+        return jsonify({'result_code': 1})
+    except:
+        return jsonify({'result_code': 0})
+    finally:
+        if connect is not None:
+            connect.close()
+
+
+
+
 
 @app.route('/GetMyPageInfo', methods=['GET', 'POST'])
 def GetMyPageInfo():
