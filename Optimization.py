@@ -415,12 +415,6 @@ def GetMyPageInfo():
                     })
 
 
-
-@app.route('/GetScheduleInfo', methods=['GET','POST'])
-def GetScheduleInfo():
-
-
-
 # @app.route('/ModifyMyInfo', methods=['GET', 'POST'])
 
 
