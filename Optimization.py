@@ -485,7 +485,7 @@ def SetPickUpInfo():
         if connect is not None:
             connect.close()
 
-@app.route('/SetSubCompleteInfo', methos=['GET', 'POST'])
+@app.route('/SetSubCompleteInfo', methods=['GET', 'POST'])
 def SetSubCompleteInfo():
     connect = conn()
     cur = connect.cursor()
@@ -544,7 +544,8 @@ def GetMyPageInfo():
 
 # @app.route('/ModifyMyInfo', methods=['GET', 'POST'])
 
-
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port='5001', debug=True)
 
 
 
