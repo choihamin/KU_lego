@@ -293,10 +293,12 @@ def SetChargeCompleteInfo():
     data = cur.fetchall()
 
     ### 배터리 잔량 비울 ###
-    cur.execute("select prefer_battery, prefer_time from PreferTime where customer_id='{}'".format(id))
+    cur.execute("select prefer_battery, time_type from PreferTime where customer_id='{}'".format(id))
     preferTime = cur.fetchall()
     C = int(preferTime[0][0])/100
-    prefer_time = int(cur.fetchall()[0][1])
+    prefer_time = int(preferTime[0][1])
+
+    print(prefer_time)
     #####################
 
     ### 연비############
@@ -383,10 +385,16 @@ def SetChargeCompleteInfo():
         current = datetime.datetime.strptime(complete_time, "%Y-%m-%d %H:%M:%S")
         min_battery_time = current + datetime.timedelta(hours=m.ObjVal)
         recommend_time = min_battery_time - datetime.timedelta(hours=24)
-        recommend_time.hour = prefer_time
+
+        Y = recommend_time.year
+        m = recommend_time.month
+        d = recommend_time.day
+        H = prefer_time
+        M = recommend_time.minute
+        S = recommend_time.second
 
         min_battery_time = datetime.datetime.strftime(min_battery_time, "%Y-%m-%d %H:%M:%S")
-        recommend_time = datetime.datetime.strftime(recommend_time, "%Y-%m-%d %H:%M:%S")
+        recommend_time = datetime.datetime.strftime(datetime.datetime(Y, m, d, H, M, S), "%Y-%m-%d %H:%M:%S")
 
         print(min_battery_time, recommend_time)
 
@@ -575,11 +583,10 @@ def SetSubCompleteInfo():
     cur = connect.cursor()
 
     reservation_id = request.args.get('Reservation_id')
-    complete_time = request.args.get('Pick_up_time')
+    complete_time = request.args.get('Complete_time')
 
     try:
-        cur.execute(
-            "update Substitute set complete_time = '{}' where reserve_id='{}'".format(complete_time, reservation_id))
+        cur.execute("update Substitute set complete_time = '{}' where reserve_id='{}'".format(complete_time, reservation_id))
         connect.commit()
         return jsonify({'result_code': 1})
     except:
