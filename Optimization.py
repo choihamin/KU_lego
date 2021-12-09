@@ -294,105 +294,109 @@ def SetChargeCompleteInfo():
 
     ### 배터리 잔량 비울 ###
     cur.execute("select prefer_battery from PreferTime where customer_id='{}'".format(id))
-    C = cur.fetchall()[0]
+    C = int(cur.fetchall()[0][0])
     #####################
 
     ### 연비############
     cur.execute("select efficiency from CarCus natural join CarModel where customer_id='{}'".format(id))
-    w = cur.fetchall()[0]
+    w = cur.fetchall()[0][0]
     ####################
 
     ### 배터리 ##########
     cur.execute("select battery_capacity from CarCus natural join CarModel where customer_id='{}'".format(id))
-    B = cur.fetchall()[0]
+    B = cur.fetchall()[0][0]
     ####################
 
-    try:
-        data = sorted(data, key=lambda x: x[0])
-        data = np.array(list(map(lambda x: x[1], data)))
 
-        #### 데이터 수 = 0 ############################### 임시변통
-        if len(data) == 0:
-            a = make_data(7)
-            flat = a.T.flatten()
-            total_hours = len(flat)
+    """try:"""
+    data = sorted(data, key=lambda x: x[0])
+    data = np.array(list(map(lambda x: x[1], data)))
 
-            now = datetime.datetime.now()
-            for i in range(total_hours):
-                timeline = (now - datetime.timedelta(hours= total_hours - i)).strftime("%Y-%m-%d %H:%M:%S")
-                cur.execute("insert into Consumption values('{}', '{}', {})".format(id, timeline, float(flat[i])))
-                connect.commit()
+    #### 데이터 수 = 0 ############################### 임시변통
+    if len(data) == 0:
+        a = make_data(7)
+        flat = a.T.flatten()
+        total_hours = len(flat)
 
-            cur.execute("select datetime, energy_consumption from Consumption where customer_id='{}'".format(id))
-            data = cur.fetchall()
+        now = datetime.datetime.now()
+        for i in range(total_hours):
+            timeline = (now - datetime.timedelta(hours= total_hours - i)).strftime("%Y-%m-%d %H:%M:%S")
+            cur.execute("insert into Consumption values('{}', '{}', {})".format(id, timeline, float(flat[i])))
+            connect.commit()
 
-        #### 데이터 수 > 168 #############################
-        if len(data) >= 168:
-            if len(data) % 168 != 0:
-                data = data[:-(data % 168)]
-            data = data.reshape(168, -1)
+        cur.execute("select datetime, energy_consumption from Consumption where customer_id='{}'".format(id))
+        data = cur.fetchall()
 
-        #### 데이터 수 < 168 #############################
-        else:
-            data = data.reshape(-1, 1)
-        #### 지수평활 알고리즘 ############################
-        weight = weight_cal(data)
-        result = data @ weight
-        ################################################
+    #### 데이터 수 > 168 #############################
+    if len(data) >= 168:
+        if len(data) % 168 != 0:
+            data = data[:-(data % 168)]
+        data = data.reshape(168, -1)
 
-        #### Optimization Process ######################
-        m = gp.Model("MILP")
-        ### Time Line ####################################################
-        for i in range(len(result)):
-            globals()['t%d' % i] = m.addVar(vtype=GRB.BINARY, name="t%d" % i)
-        ##################################################################
+    #### 데이터 수 < 168 #############################
+    else:
+        data = data.reshape(-1, 1)
+    #### 지수평활 알고리즘 ############################
+    weight = weight_cal(data)
+    result = data @ weight
+    ################################################
 
-        ## 배터리 예측 사용량 ####################
-        for i in range(len(result)):
-            globals()['delta_b%d' % (i)] = result[i]
-        ###########################################
+    #### Optimization Process ######################
+    m = gp.Model("MILP")
+    ### Time Line ####################################################
+    for i in range(len(result)):
+        globals()['t%d' % i] = m.addVar(vtype=GRB.BINARY, name="t%d" % i)
+    ##################################################################
 
-        obj = t0
-        for i in range(1, len(result)):
-            obj += globals()['t%d' % i]
-        m.setObjective(obj, GRB.MAXIMIZE)
+    ## 배터리 예측 사용량 ####################
+    for i in range(len(result)):
+        globals()['delta_b%d' % (i)] = result[i]
+    ###########################################
 
-        const = delta_b0 * t0
-        for i in range(1, len(result)):
-            const += globals()['delta_b%d' % i] * globals()['t%d' % i]
-        m.addConstr(B - const >= B * C, "c0")
+    obj = t0
+    for i in range(1, len(result)):
+        obj += globals()['t%d' % i]
+    m.setObjective(obj, GRB.MAXIMIZE)
 
-        const = t0
-        for i in range(1, len(result)):
-            const += globals()['t%d' % i]
-        m.addConstr(const >= 1, "c1")
+    const = delta_b0 * t0
+    for i in range(1, len(result)):
+        const += globals()['delta_b%d' % i] * globals()['t%d' % i]
 
-        for i in range(len(result) - 1):
-            m.addConstr(globals()['t%d' % i] >= globals()['t%d' % (i + 1)])
-        m.optimize()
 
-        prefered_Time = 19
-        last_Charging_Time = 10
-        free_time = 2
 
-        i = 0
-        while True:
-            bound = prefered_Time - last_Charging_Time + 24 * (i + 1) + free_time
-            if m.ObjVal < bound:
-                break;
-            i += 1
-        recommend = bound - 24
+    m.addConstr(B - const >= B * C, "c0")
 
-        cur.execute("insert into Schedule values('{}','{}','{}','{}')".format(id, complete_time, m.ObjVal, recommend))
-        connect.commit()
+    const = t0
+    for i in range(1, len(result)):
+        const += globals()['t%d' % i]
+    m.addConstr(const >= 1, "c1")
 
-        return jsonify({'result_code': 1})
-    except:
+    for i in range(len(result) - 1):
+        m.addConstr(globals()['t%d' % i] >= globals()['t%d' % (i + 1)])
+    m.optimize()
+
+    prefered_Time = 19
+    last_Charging_Time = 10
+    free_time = 2
+
+    i = 0
+    while True:
+        bound = prefered_Time - last_Charging_Time + 24 * (i + 1) + free_time
+        if m.ObjVal < bound:
+            break;
+        i += 1
+    recommend = bound - 24
+
+    cur.execute("insert into Schedule values('{}','{}','{}','{}')".format(id, complete_time, m.ObjVal, recommend))
+    connect.commit()
+
+    return jsonify({'result_code': 1})
+    """except Exception:
         return jsonify({'result_code': 0})
     finally:
         if connect is not None:
             connect.close()
-
+"""
 @app.route('/GetScheduleInfo', methods=['GET', 'POST'])
 def GetScheduleInfo():
     connect = conn()
@@ -441,7 +445,10 @@ def SetSubInfo():
 
     cur.execute("select reserve_id from Substitute")
     reserve_id_lst = cur.fetchall()
-    reserve_id = max(list(map(lambda x: x[0], reserve_id_lst))) + 1
+    if len(reserve_id_lst) != 0:
+        reserve_id = max(list(map(lambda x: x[0], reserve_id_lst))) + 1
+    else:
+        reserve_id = 0
 
     try:
         cur.execute("select * from Substitute where customer_id='{}' and reserve_time='{}' and location='{}'".format(id,
