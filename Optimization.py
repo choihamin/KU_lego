@@ -239,15 +239,15 @@ def SetCarInfo():
     connect = conn()
     cur = connect.cursor()
 
-    customer_id = request.args.get("Customer_id")
-    car_model_id = int(request.args.get('Car_model_id'))
+    customer_id = request.args.get("Id")
+    car_model_id = request.args.get('Car_model_id')
     car_number = request.args.get('Car_number')
-    prefer_time = int(request.args.get('Time_type'))
-    prefer_battery = int(request.args.get('Prefer_battery'))
+    prefer_time = request.args.get('Time_type')
+    prefer_battery = request.args.get('Prefer_battery')
 
-    station1 = int(request.args.get('Station_0'))
-    station2 = int(request.args.get('Station_1'))
-    station3 = int(request.args.get('Station_2'))
+    station1 = request.args.get('Station_0')
+    station2 = request.args.get('Station_1')
+    station3 = request.args.get('Station_2')
 
     try:
         cur.execute("insert into CarCus values('{}',{})".format(customer_id, car_model_id))
@@ -259,9 +259,13 @@ def SetCarInfo():
         cur.execute("insert into PreferTime values('{}', {}, {})".format(customer_id, prefer_time, prefer_battery))
         connect.commit()
 
+
+
         cur.execute(
-            "insert into PreferStation values('{}', {}, {}, {}".format(customer_id, station1, station2, station3))
+            "insert into PreferStation values('{}', {}, {}, {})".format(customer_id, station1, station2, station3))
         connect.commit()
+        print('오예')
+
         return jsonify({'result_code': 1})
     except:
         return jsonify({'result_code': 0})
