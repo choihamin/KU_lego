@@ -173,7 +173,7 @@ def GetHomeInfo():
     cur = connect.cursor()
 
     id = request.args.get('Id')
-    cur.execute("select customer_name, car_model_name, battery_capacity, efficiency from Customer natural join CarModel where customer_id='{}'".format(id))
+    cur.execute("select customer_name, car_model_name, battery_capacity, efficiency from (Customer natural join CarCus) natural join CarModel where customer_id='{}'".format(id))
     data = cur.fetchall()
     name = data[0][0]
     car_model = data[0][1]
@@ -236,6 +236,9 @@ def SetCarInfo():
     station3 = request.args.get('Station_2')
 
     try:
+        cur.execute("insert into CarCus values('{}','{}')".format(customer_id, car_model_id))
+        connect.commit()
+
         cur.execute("insert into CusSpec values('{}', {}, '{}')".format(customer_id, car_model_id, car_number))
         connect.commit()
 
