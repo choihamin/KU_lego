@@ -363,8 +363,6 @@ def SetChargeCompleteInfo():
         const = delta_b0 * t0
         for i in range(1, len(result)):
             const += globals()['delta_b%d' % i] * globals()['t%d' % i]
-        print(const.size())
-        print(B - const)
 
         m.addConstr(B - const >= B * C, name='c0')
 
@@ -413,7 +411,7 @@ def GetScheduleInfo():
 
     try:
 
-        cur.execute("select complete_time, min_battery_time, charge_time from Schedule where id = '{}'".format(id))
+        cur.execute("select complete_time, min_battery_time, charge_time from Schedule where customer_id = '{}'".format(id))
         data = cur.fetchall()
 
         cur.execute("select prefer_battery from PreferTime where customer_id='{}".format(id))
