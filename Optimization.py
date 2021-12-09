@@ -291,7 +291,7 @@ def SetChargeCompleteInfo():
     data = cur.fetchall()
 
     ### 배터리 잔량 비울 ###
-    cur.execute("select prefer_battery from PreferTime where customer_id='{}".format(id))
+    cur.execute("select prefer_battery from PreferTime where customer_id='{}'".format(id))
     C = cur.fetchall()[0]
     #####################
 
