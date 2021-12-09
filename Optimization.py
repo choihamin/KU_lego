@@ -286,8 +286,10 @@ def SetChargeCompleteInfo():
 
     connect = conn()
     cur = connect.cursor()
-    id = request.args.get('ID')
+    id = request.args.get('Id')
     complete_time = request.args.get('Complete_time')
+
+
 
 
 
