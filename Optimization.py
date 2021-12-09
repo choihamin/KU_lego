@@ -461,7 +461,7 @@ def SetSubInfo():
         if connect is not None:
             connect.close()
 
-@app.route('/GetSubInfo')
+@app.route('/GetSubInfo', methods=['GET', 'POST'])
 def GetSubInfo():
     connect = conn()
     cur = connect.cursor()
@@ -489,14 +489,15 @@ def GetSubInfo():
                         'driver_name': driver_name,
                         'driver_phone': driver_phone,
                         'pick_up_time': pick_up_time,
-                        'complete_time': complete_time,})
+                        'complete_time': complete_time,
+                        'result_code': 1})
     except:
         return jsonify({'result_code': 0})
     finally:
         if connect is not None:
             connect.close()
 
-@app.route('/GetDriverHomeInfo')
+@app.route('/GetDriverHomeInfo', methods=['GET', 'POST'])
 def GetDriverHomeInfo():
     connect = conn()
     cur = connect.cursor()
