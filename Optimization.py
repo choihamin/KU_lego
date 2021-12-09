@@ -293,8 +293,10 @@ def SetChargeCompleteInfo():
     data = cur.fetchall()
 
     ### 배터리 잔량 비울 ###
-    cur.execute("select prefer_battery from PreferTime where customer_id='{}'".format(id))
-    C = int(cur.fetchall()[0][0])/100
+    cur.execute("select prefer_battery, prefer_time from PreferTime where customer_id='{}'".format(id))
+    preferTime = cur.fetchall()
+    C = int(preferTime[0][0])/100
+    prefer_time = int(cur.fetchall()[0][1])
     #####################
 
     ### 연비############
@@ -375,26 +377,13 @@ def SetChargeCompleteInfo():
             m.addConstr(globals()['t%d' % i] >= globals()['t%d' % (i + 1)])
         m.optimize()
 
-        prefered_Time = 19
         last_Charging_Time = 10
         free_time = 2
 
-        i = 0
-        while True:
-            bound = prefered_Time - last_Charging_Time + 24 * (i + 1) + free_time
-            if m.ObjVal < bound:
-                break;
-            i += 1
-
-        recommend = bound - 24
-
-
-
         current = datetime.datetime.strptime(complete_time, "%Y-%m-%d %H:%M:%S")
         min_battery_time = current + datetime.timedelta(hours=m.ObjVal)
-        recommend_time = current + datetime.timedelta(hours=recommend)
-
-
+        recommend_time = min_battery_time - datetime.timedelta(hours=24)
+        recommend_time.hour = prefer_time
 
         min_battery_time = datetime.datetime.strftime(min_battery_time, "%Y-%m-%d %H:%M:%S")
         recommend_time = datetime.datetime.strftime(recommend_time, "%Y-%m-%d %H:%M:%S")
