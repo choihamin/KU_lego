@@ -516,7 +516,7 @@ def GetDriverHomeInfo():
     driver_id = request.args.get('Id')
 
     try:
-        sql = "select reserve_id, reserve_time, location, customer_name, customer_phone, car_number, car_model_name, notice from ((CarCus natural join CarModel) natural join (Substitute natural join Customer)) natural join CusDriver where driver_id = '{}'"
+        sql = "select reserve_id, reserve_time, location, customer_name, phone, car_number, car_model_name, notice from (((cusspec natural join carmodel) natural join substitute) natural join customer) natural join cusdriver where driver_id = '{}'"
         cur.execute(sql.format(driver_id))
         data = cur.fetchall()
         data = sorted(data, key = lambda x: x[1])
