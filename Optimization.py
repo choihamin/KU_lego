@@ -284,7 +284,7 @@ def SetChargeCompleteInfo():
     id = request.args.get('Id')
     complete_time = request.args.get('Complete_time')
 
-
+    print(complete_time)
 
 
 
@@ -385,13 +385,28 @@ def SetChargeCompleteInfo():
             if m.ObjVal < bound:
                 break;
             i += 1
+
         recommend = bound - 24
 
-        cur.execute("insert into Schedule values('{}','{}','{}','{}')".format(id, complete_time, m.ObjVal, recommend))
+
+
+        current = datetime.datetime.strptime(complete_time, "%Y-%m-%d %H:%M:%S")
+        min_battery_time = current + datetime.timedelta(hours=m.ObjVal)
+        recommend_time = current + datetime.timedelta(hours=recommend)
+
+
+
+        min_battery_time = datetime.datetime.strftime(min_battery_time, "%Y-%m-%d %H:%M:%S")
+        recommend_time = datetime.datetime.strftime(recommend_time, "%Y-%m-%d %H:%M:%S")
+
+        print(min_battery_time, recommend_time)
+
+        cur.execute("insert into Schedule values('{}','{}','{}','{}')".format(id, complete_time, min_battery_time, recommend_time))
         connect.commit()
 
         return jsonify({'result_code': 1})
-    except Exception:
+    except Exception as e:
+        print(e)
         return jsonify({'result_code': 0})
     finally:
         if connect is not None:
