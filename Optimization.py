@@ -294,7 +294,7 @@ def SetChargeCompleteInfo():
 
     ### 배터리 잔량 비울 ###
     cur.execute("select prefer_battery from PreferTime where customer_id='{}'".format(id))
-    C = int(cur.fetchall()[0][0])
+    C = int(cur.fetchall()[0][0])/100
     #####################
 
     ### 연비############
@@ -331,12 +331,14 @@ def SetChargeCompleteInfo():
     if len(data) >= 168:
         if len(data) % 168 != 0:
             data = data[:-(data % 168)]
-        data = data.reshape(168, -1)
+        data = data.reshape(-1, 168).T
 
     #### 데이터 수 < 168 #############################
     else:
         data = data.reshape(-1, 1)
     #### 지수평활 알고리즘 ############################
+
+
     weight = weight_cal(data)
     result = data @ weight
     ################################################
@@ -361,15 +363,15 @@ def SetChargeCompleteInfo():
     const = delta_b0 * t0
     for i in range(1, len(result)):
         const += globals()['delta_b%d' % i] * globals()['t%d' % i]
+    print(const.size())
+    print(B - const)
 
-
-
-    m.addConstr(B - const >= B * C, "c0")
+    m.addConstr(B - const >= B * C, name='c0')
 
     const = t0
     for i in range(1, len(result)):
         const += globals()['t%d' % i]
-    m.addConstr(const >= 1, "c1")
+    m.addConstr(const >= 1, name='c1')
 
     for i in range(len(result) - 1):
         m.addConstr(globals()['t%d' % i] >= globals()['t%d' % (i + 1)])
@@ -395,8 +397,8 @@ def SetChargeCompleteInfo():
         return jsonify({'result_code': 0})
     finally:
         if connect is not None:
-            connect.close()
-"""
+            connect.close()"""
+
 @app.route('/GetScheduleInfo', methods=['GET', 'POST'])
 def GetScheduleInfo():
     connect = conn()
@@ -456,11 +458,11 @@ def SetSubInfo():
                                                                                                                      location))
         if len(cur.fetchall()) != 0:
             raise Exception
-        cur.execute("insert into Substitute values({},'{}', '{}', '{}', '{}','','')".format(reserve_id,
-                                                                                            id,
-                                                                                            reserve_time,
-                                                                                            location,
-                                                                                            notice))
+        cur.execute("insert into Substitute values({},'{}', '{}', '{}', '{}')".format(reserve_id,
+                                                                                      id,
+                                                                                      location,
+                                                                                      reserve_time,
+                                                                                      notice))
         connect.commit()
 
         return jsonify({'result_code': 1})
@@ -481,6 +483,7 @@ def GetSubInfo():
         cur.execute(sql.format(id))
         data = cur.fetchall()
         target = sorted(data, key=lambda x: x[2])[-1]
+        print(target)
 
         reserve_id = target[0]
         reserve_time = target[1]
