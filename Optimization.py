@@ -175,11 +175,23 @@ def GetHomeInfo():
     id = request.args.get('Id')
     cur.execute("select customer_name, car_model_name, battery_capacity, efficiency from (Customer natural join CarCus) natural join CarModel where customer_id='{}'".format(id))
     data = cur.fetchall()
-    name = data[0][0]
-    car_model = data[0][1]
-    battery_capacity = data[0][2] # 차량 배터리용량
-    efficiency = data[0][3]       # 연비
-    current_capacity = 45
+
+    if len(data) == 0:
+        cur.execute(
+            "select customer_name from Customer where customer_id='{}'".format(id))
+        data = cur.fetchall()
+        name = data[0][0]
+        car_model = "정보없음"
+        battery_capacity = "정보없음"  # 차량 배터리용량
+        efficiency = "정보없음"  # 연비
+        current_capacity = "정보없음"
+
+    else:
+        name = data[0][0]
+        car_model = data[0][1]
+        battery_capacity = data[0][2] # 차량 배터리용량
+        efficiency = data[0][3]       # 연비
+        current_capacity = 45
     connect.close()
 
 
