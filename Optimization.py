@@ -240,17 +240,17 @@ def SetCarInfo():
     cur = connect.cursor()
 
     customer_id = request.args.get("Customer_id")
-    car_model_id = request.args.get('Car_model_id')
+    car_model_id = int(request.args.get('Car_model_id'))
     car_number = request.args.get('Car_number')
-    prefer_time = request.args.get('Time_type')
-    prefer_battery = request.args.get('Prefer_battery')
+    prefer_time = int(request.args.get('Time_type'))
+    prefer_battery = int(request.args.get('Prefer_battery'))
 
-    station1 = request.args.get('Station_0')
-    station2 = request.args.get('Station_1')
-    station3 = request.args.get('Station_2')
+    station1 = int(request.args.get('Station_0'))
+    station2 = int(request.args.get('Station_1'))
+    station3 = int(request.args.get('Station_2'))
 
     try:
-        cur.execute("insert into CarCus values('{}','{}')".format(customer_id, car_model_id))
+        cur.execute("insert into CarCus values('{}',{})".format(customer_id, car_model_id))
         connect.commit()
 
         cur.execute("insert into CusSpec values('{}', {}, '{}')".format(customer_id, car_model_id, car_number))
