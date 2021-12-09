@@ -304,7 +304,7 @@ def SetChargeCompleteInfo():
 
     ### 배터리 ##########
     cur.execute("select battery_capacity from CarCus natural join CarModel where customer_id='{}'".format(id))
-    B = cur.fetchall()[0][0]
+    B = float(cur.fetchall()[0][0])
     ####################
 
 
@@ -352,7 +352,7 @@ def SetChargeCompleteInfo():
 
     ## 배터리 예측 사용량 ####################
     for i in range(len(result)):
-        globals()['delta_b%d' % (i)] = result[i]
+        globals()['delta_b%d'%i] = result[i]
     ###########################################
 
     obj = t0
