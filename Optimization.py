@@ -308,96 +308,96 @@ def SetChargeCompleteInfo():
     ####################
 
 
-    """try:"""
-    data = sorted(data, key=lambda x: x[0])
-    data = np.array(list(map(lambda x: x[1], data)))
+    try:
+        data = sorted(data, key=lambda x: x[0])
+        data = np.array(list(map(lambda x: x[1], data)))
 
-    #### 데이터 수 = 0 ############################### 임시변통
-    if len(data) == 0:
-        a = make_data(7)
-        flat = a.T.flatten()
-        total_hours = len(flat)
+        #### 데이터 수 = 0 ############################### 임시변통
+        if len(data) == 0:
+            a = make_data(7)
+            flat = a.T.flatten()
+            total_hours = len(flat)
 
-        now = datetime.datetime.now()
-        for i in range(total_hours):
-            timeline = (now - datetime.timedelta(hours= total_hours - i)).strftime("%Y-%m-%d %H:%M:%S")
-            cur.execute("insert into Consumption values('{}', '{}', {})".format(id, timeline, float(flat[i])))
-            connect.commit()
+            now = datetime.datetime.now()
+            for i in range(total_hours):
+                timeline = (now - datetime.timedelta(hours= total_hours - i)).strftime("%Y-%m-%d %H:%M:%S")
+                cur.execute("insert into Consumption values('{}', '{}', {})".format(id, timeline, float(flat[i])))
+                connect.commit()
 
-        cur.execute("select datetime, energy_consumption from Consumption where customer_id='{}'".format(id))
-        data = cur.fetchall()
+            cur.execute("select datetime, energy_consumption from Consumption where customer_id='{}'".format(id))
+            data = cur.fetchall()
 
-    #### 데이터 수 > 168 #############################
-    if len(data) >= 168:
-        if len(data) % 168 != 0:
-            data = data[:-(data % 168)]
-        data = data.reshape(-1, 168).T
+        #### 데이터 수 > 168 #############################
+        if len(data) >= 168:
+            if len(data) % 168 != 0:
+                data = data[:-(data % 168)]
+            data = data.reshape(-1, 168).T
 
-    #### 데이터 수 < 168 #############################
-    else:
-        data = data.reshape(-1, 1)
-    #### 지수평활 알고리즘 ############################
+        #### 데이터 수 < 168 #############################
+        else:
+            data = data.reshape(-1, 1)
+        #### 지수평활 알고리즘 ############################
 
 
-    weight = weight_cal(data)
-    result = data @ weight
-    ################################################
+        weight = weight_cal(data)
+        result = data @ weight
+        ################################################
 
-    #### Optimization Process ######################
-    m = gp.Model("MILP")
-    ### Time Line ####################################################
-    for i in range(len(result)):
-        globals()['t%d' % i] = m.addVar(vtype=GRB.BINARY, name="t%d" % i)
-    ##################################################################
+        #### Optimization Process ######################
+        m = gp.Model("MILP")
+        ### Time Line ####################################################
+        for i in range(len(result)):
+            globals()['t%d' % i] = m.addVar(vtype=GRB.BINARY, name="t%d" % i)
+        ##################################################################
 
-    ## 배터리 예측 사용량 ####################
-    for i in range(len(result)):
-        globals()['delta_b%d'%i] = result[i]
-    ###########################################
+        ## 배터리 예측 사용량 ####################
+        for i in range(len(result)):
+            globals()['delta_b%d'%i] = result[i]
+        ###########################################
 
-    obj = t0
-    for i in range(1, len(result)):
-        obj += globals()['t%d' % i]
-    m.setObjective(obj, GRB.MAXIMIZE)
+        obj = t0
+        for i in range(1, len(result)):
+            obj += globals()['t%d' % i]
+        m.setObjective(obj, GRB.MAXIMIZE)
 
-    const = delta_b0 * t0
-    for i in range(1, len(result)):
-        const += globals()['delta_b%d' % i] * globals()['t%d' % i]
-    print(const.size())
-    print(B - const)
+        const = delta_b0 * t0
+        for i in range(1, len(result)):
+            const += globals()['delta_b%d' % i] * globals()['t%d' % i]
+        print(const.size())
+        print(B - const)
 
-    m.addConstr(B - const >= B * C, name='c0')
+        m.addConstr(B - const >= B * C, name='c0')
 
-    const = t0
-    for i in range(1, len(result)):
-        const += globals()['t%d' % i]
-    m.addConstr(const >= 1, name='c1')
+        const = t0
+        for i in range(1, len(result)):
+            const += globals()['t%d' % i]
+        m.addConstr(const >= 1, name='c1')
 
-    for i in range(len(result) - 1):
-        m.addConstr(globals()['t%d' % i] >= globals()['t%d' % (i + 1)])
-    m.optimize()
+        for i in range(len(result) - 1):
+            m.addConstr(globals()['t%d' % i] >= globals()['t%d' % (i + 1)])
+        m.optimize()
 
-    prefered_Time = 19
-    last_Charging_Time = 10
-    free_time = 2
+        prefered_Time = 19
+        last_Charging_Time = 10
+        free_time = 2
 
-    i = 0
-    while True:
-        bound = prefered_Time - last_Charging_Time + 24 * (i + 1) + free_time
-        if m.ObjVal < bound:
-            break;
-        i += 1
-    recommend = bound - 24
+        i = 0
+        while True:
+            bound = prefered_Time - last_Charging_Time + 24 * (i + 1) + free_time
+            if m.ObjVal < bound:
+                break;
+            i += 1
+        recommend = bound - 24
 
-    cur.execute("insert into Schedule values('{}','{}','{}','{}')".format(id, complete_time, m.ObjVal, recommend))
-    connect.commit()
+        cur.execute("insert into Schedule values('{}','{}','{}','{}')".format(id, complete_time, m.ObjVal, recommend))
+        connect.commit()
 
-    return jsonify({'result_code': 1})
-    """except Exception:
+        return jsonify({'result_code': 1})
+    except Exception:
         return jsonify({'result_code': 0})
     finally:
         if connect is not None:
-            connect.close()"""
+            connect.close()
 
 @app.route('/GetScheduleInfo', methods=['GET', 'POST'])
 def GetScheduleInfo():
