@@ -259,8 +259,6 @@ def SetCarInfo():
         cur.execute("insert into PreferTime values('{}', {}, {})".format(customer_id, prefer_time, prefer_battery))
         connect.commit()
 
-
-
         cur.execute(
             "insert into PreferStation values('{}', {}, {}, {})".format(customer_id, station1, station2, station3))
         connect.commit()
