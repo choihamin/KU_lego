@@ -134,6 +134,9 @@ def SetSignUpInfo():
     try:
         cur.execute("insert into customer values('{}','{}','{}','{}')".format(id, pw, name, phone))
         connect.commit()
+
+        cur.execute("insert into CusDriver values('{}','{}')".format(id, 'driver'))
+        connect.commit()
         return jsonify({'result_code': 1})
     except:
         return jsonify({'result_code': 0})
@@ -177,8 +180,7 @@ def GetHomeInfo():
     data = cur.fetchall()
 
     if len(data) == 0:
-        cur.execute(
-            "select customer_name from Customer where customer_id='{}'".format(id))
+        cur.execute("select customer_name from Customer where customer_id='{}'".format(id))
         data = cur.fetchall()
         name = data[0][0]
         car_model = "정보없음"
