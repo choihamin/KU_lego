@@ -7,20 +7,11 @@ from flask_restx import Api, Resource
 from mapboxgl.utils import df_to_geojson
 import json
 import numpy as np
-import uuid
-import logging, time
-from apscheduler.schedulers.background import BackgroundScheduler
-import requests, bs4
-import urllib
+import logging
 import pandas as pd
-from fbprophet import Prophet
-from socket import timeout
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
-from urllib.parse import urlencode, quote_plus, unquote
-from collections import deque
 import gurobipy as gp
 from gurobipy import GRB
+
 
 app = Flask(__name__)
 logging = logging.getLogger(__name__)
@@ -32,6 +23,49 @@ os.environ["DATABASE_URL"] = "postgres://yadctsip:mvZ_FWEhIcFp4PCZMlzUtdZivUkj1I
 url = up.urlparse(os.environ["DATABASE_URL"])
 
 connect = None
+
+def make_data(n):
+    master = []
+    for i in range(n):
+        mat_weekday = []
+        for i in range(5):
+            tmp = []
+            for i in range(2):
+                a = list(np.random.poisson(lam=(1984/820)/6.3, size = 12))
+                val = sum(a)
+                b = list(np.random.poisson(1/3, 3))
+                c = [0]*3
+                c[b.index(max(b))] = val
+                d = [0]*6 + c + [0]*3
+                tmp += d
+            mat_weekday.append(tmp)
+        mat_weekday = np.array(mat_weekday)
+
+        mat_weekend = []
+        for i in range(2):
+            tmp = []
+
+            a = list(np.random.poisson(lam=(1984/540)/6.3, size = 12))
+            val = sum(a)
+            b = list(np.random.poisson(1/8, 8))
+            c = [0]*8
+            c[b.index(max(b))] = val
+            d = [0]*6 + c
+            tmp += d
+
+            a = list(np.random.poisson(lam=(1984/540)/6.3, size = 12))
+            val = sum(a)
+            b = list(np.random.poisson(1/10, 10))
+            c = [0]*10
+            c[b.index(max(b))] = val
+            tmp += c
+            mat_weekend.append(tmp)
+        mat_weekend = np.array(mat_weekend)
+
+        mat = np.vstack((mat_weekday, mat_weekend)).flatten()
+        master.append(mat)
+    master = np.array(master).T
+    return master
 
 def conn():
     connect = psycopg2.connect(database=url.path[1:],
@@ -236,6 +270,9 @@ def SetChargeCompleteInfo():
     id = request.args.get('ID')
     complete_time = request.args.get('Complete_time')
 
+
+
+
     cur.execute("select datetime, energy_consumption from Consumption where customer_id='{}'".format(id))
     data = cur.fetchall()
 
@@ -258,9 +295,27 @@ def SetChargeCompleteInfo():
         data = sorted(data, key=lambda x: x[0])
         data = np.array(list(map(lambda x: x[1], data)))
 
+        #### 데이터 수 = 0 ############################### 임시변통
+        if len(data) == 0:
+            a = make_data(7)
+            flat = a.T.flatten()
+            total_hours = len(flat)
+
+            now = datetime.datetime.now()
+            for i in range(total_hours):
+                timeline = (now - datetime.timedelta(hours= total_hours - i)).strftime("%Y-%m-%d %H:%M:%S")
+                cur.execute("insert into Consumption values('{}', '{}', {})".format(id, timeline, float(flat[i])))
+                connect.commit()
+
+            cur.execute("select datetime, energy_consumption from Consumption where customer_id='{}'".format(id))
+            data = cur.fetchall()
+
         #### 데이터 수 > 168 #############################
         if len(data) >= 168:
+            if len(data) % 168 != 0:
+                data = data[:-(data % 168)]
             data = data.reshape(168, -1)
+
         #### 데이터 수 < 168 #############################
         else:
             data = data.reshape(-1, 1)
