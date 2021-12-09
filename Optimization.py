@@ -211,13 +211,10 @@ def PredictDemand():
     cur = connect.cursor()
     cur.execute("select * from Record")
     data = cur.fetchall()
-
     number_of_station = len(set(list(map(lambda x: x[0], data))))
     number_of_time = 24
     station_number_list = set(list(map(lambda x: x[0], data)))
-
     Demand_matrix = [0 for i in range(number_of_time) for j in range(number_of_station)]
-
     for e in data:
         for i in range(24):
             if i < 10:
@@ -227,11 +224,9 @@ def PredictDemand():
             for j in station_number_list:
                  if e[1][-2] == interval and e[0] == j:
                      Demand_matrix[j][i] += e[2]
-
     for i in range(len(Demand_matrix)):
         for j in range(len(Demand_matrix)):
             Demand_matrix[i][j] //= 7
-
     return Demand_matrix"""
 
 @app.route('/SetCarInfo', methods=['GET','POST'])
@@ -286,7 +281,7 @@ def SetChargeCompleteInfo():
 
     connect = conn()
     cur = connect.cursor()
-    id = request.args.get('ID')
+    id = request.args.get('Id')
     complete_time = request.args.get('Complete_time')
 
 
@@ -466,7 +461,7 @@ def SetSubInfo():
         if connect is not None:
             connect.close()
 
-@app.route('/GetSubInfo', methods=['GET', 'POST'])
+@app.route('/GetSubInfo')
 def GetSubInfo():
     connect = conn()
     cur = connect.cursor()
@@ -494,15 +489,14 @@ def GetSubInfo():
                         'driver_name': driver_name,
                         'driver_phone': driver_phone,
                         'pick_up_time': pick_up_time,
-                        'complete_time': complete_time,
-                        'result_code': 1})
+                        'complete_time': complete_time,})
     except:
         return jsonify({'result_code': 0})
     finally:
         if connect is not None:
             connect.close()
 
-@app.route('/GetDriverHomeInfo', methods=['GET', 'POST'])
+@app.route('/GetDriverHomeInfo')
 def GetDriverHomeInfo():
     connect = conn()
     cur = connect.cursor()
