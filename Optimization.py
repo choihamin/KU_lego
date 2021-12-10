@@ -431,7 +431,7 @@ def GetScheduleInfo():
 
         print(data)
 
-        cur.execute("select prefer_battery from PreferTime where customer_id='{}".format(id))
+        cur.execute("select prefer_battery from PreferTime where customer_id='{}'".format(id))
         prefer_battery = cur.fetchall()[0][0]
         print(prefer_battery)
 
