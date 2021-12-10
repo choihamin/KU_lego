@@ -176,7 +176,7 @@ def GetHomeInfo():
     cur = connect.cursor()
 
     id = request.args.get('Id')
-    cur.execute("select customer_name, car_model_name, battery_capacity, efficiency from (Customer natural join CarCus) natural join CarModel where customer_id='{}'".format(id))
+    cur.execute("select customer_name, car_model_name, battery_capacity, efficiency, car_number from (Customer natural join CusSpec) natural join CarModel where customer_id='{}'".format(id))
     data = cur.fetchall()
 
     if len(data) == 0:
@@ -187,6 +187,7 @@ def GetHomeInfo():
         battery_capacity = "정보없음"  # 차량 배터리용량
         efficiency = "정보없음"  # 연비
         current_capacity = "정보없음"
+        car_number = "정보없음"
 
     else:
         name = data[0][0]
@@ -194,16 +195,18 @@ def GetHomeInfo():
         battery_capacity = data[0][2] # 차량 배터리용량
         efficiency = data[0][3]       # 연비
         current_capacity = 45
+        car_number = data[0][4]
     connect.close()
 
 
 
     return jsonify({'name': name,
-                        'car_model_name': car_model,
-                        'efficiency': efficiency,
-                        'battery_capacity': battery_capacity,
-                        'current_capacity' : current_capacity
-                        })
+                    'car_model_name': car_model,
+                    'efficiency': efficiency,
+                    'battery_capacity': battery_capacity,
+                    'current_capacity': current_capacity,
+                    'car_number': car_number
+                    })
 
 """@app.route('/PredictDemand', methods=['GET', 'POST'])
 def PredictDemand():
