@@ -423,11 +423,14 @@ def GetScheduleInfo():
 
     try:
 
-        cur.execute("select complete_time, min_battery_time, charge_time from Schedule where customer_id = '{}'".format(id))
+        cur.execute("select complete_time, min_battery_time, charge_time from Schedule where customer_id='{}'".format(id))
         data = cur.fetchall()
 
+        print(data)
+
         cur.execute("select prefer_battery from PreferTime where customer_id='{}".format(id))
-        prefer_battery = cur.fetchall()[0]
+        prefer_battery = cur.fetchall()[0][0]
+        print(prefer_battery)
 
         data = sorted(data, key=lambda x: x[0])
 
@@ -586,7 +589,7 @@ def SetSubCompleteInfo():
     complete_time = request.args.get('Complete_time')
 
     try:
-        cur.execute("update Substitute set complete_time = '{}' where reserve_id='{}'".format(complete_time, reservation_id))
+        cur.execute("update Substitute set complete_time = '{}' where reserve_id={}".format(complete_time, reservation_id))
         connect.commit()
         return jsonify({'result_code': 1})
     except:
