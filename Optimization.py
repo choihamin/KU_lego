@@ -133,8 +133,6 @@ def SetSignUpInfo():
     phone = request.args.get('Phone')
     try:
         cur.execute("insert into customer values('{}','{}','{}','{}')".format(id, pw, name, phone))
-        connect.commit()
-
         cur.execute("insert into CusDriver values('{}','{}')".format(id, 'driver'))
         connect.commit()
         return jsonify({'result_code': 1})
