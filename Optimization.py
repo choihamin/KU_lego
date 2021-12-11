@@ -255,7 +255,8 @@ def SetCarInfo():
         print('오예')
 
         return jsonify({'result_code': 1})
-    except:
+    except Exception as e:
+        print(e)
         return jsonify({'result_code': 0})
     finally:
         if connect is not None:
