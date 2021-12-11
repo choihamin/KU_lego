@@ -136,7 +136,8 @@ def SetSignUpInfo():
         cur.execute("insert into CusDriver values('{}','{}')".format(id, 'driver'))
         connect.commit()
         return jsonify({'result_code': 1})
-    except:
+    except Exception as e:
+        print(e)
         return jsonify({'result_code': 0})
     finally:
         if connect is not None:
@@ -151,7 +152,8 @@ def GetCarCompanyInfo():
         data = cur.fetchall()
         dict_ = jsonify(manufacturers=[dict(manufacturer = data[i][0]) for i in range(len(data))])
         return dict_
-    except:
+    except Exception as e:
+        print(e)
         return jsonify({'result_code': 0})
     finally:
         if connect is not None:
@@ -475,7 +477,8 @@ def SetSubInfo():
         connect.commit()
 
         return jsonify({'result_code': 1})
-    except:
+    except Exception as e:
+        print(e)
         return jsonify({'result_code': 0})
     finally:
         if connect is not None:
@@ -512,7 +515,8 @@ def GetSubInfo():
                         'pick_up_time': pick_up_time,
                         'complete_time': complete_time,
                         'result_code': 1})
-    except:
+    except Exception as e:
+        print(e)
         return jsonify({'result_code': 0})
     finally:
         if connect is not None:
@@ -533,7 +537,8 @@ def GetDriverHomeInfo():
         return jsonify(list=[dict(reserve_id=data[i][0], reserve_time=data[i][1], location=data[i][2],
                                   customer_name=data[i][3], customer_phone=data[i][4], car_number=data[i][5],
                                   car_model_name=data[i][6], notice=data[i][7]) for i in range(len(data))])
-    except:
+    except Exception as e:
+        print(e)
         return jsonify({'result_code': 0})
     finally:
         if connect is not None:
@@ -552,7 +557,8 @@ def DriverSetSignUpInfo():
         cur.execute("insert into drvier values('{}','{}','{}')".format(id, pw, name))
         connect.commit()
         return jsonify({'result_code': 1})
-    except:
+    except Exception as e:
+        print(e)
         return jsonify({'result_code': 0})
     finally:
         if connect is not None:
@@ -588,7 +594,8 @@ def SetSubCompleteInfo():
         cur.execute("update Substitute set complete_time = '{}' where reserve_id={}".format(complete_time, reservation_id))
         connect.commit()
         return jsonify({'result_code': 1})
-    except:
+    except Exception as e:
+        print(e)
         return jsonify({'result_code': 0})
     finally:
         if connect is not None:
